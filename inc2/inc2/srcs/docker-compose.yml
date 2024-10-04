@@ -1,0 +1,131 @@
+
+services:
+  nginx:
+    init: true
+    build: ./requirements/nginx
+    container_name: nginx
+    image: nginx:kaltevog
+    ports:
+      - "443:443"
+    env_file:
+      - .env
+    volumes:
+      - wp-volume:/var/www/html
+    networks:
+      - wp-network
+    restart: on-failure
+    depends_on:
+      - wordpress
+
+  mariadb:
+    container_name: mariadb
+    build: ./requirements/mariadb
+    image: mariadb:kaltevog
+    env_file:
+      - .env
+    volumes:
+      - db-volume:/var/lib/mysql
+    networks:
+      - wp-network
+    restart: on-failure
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost"]
+      interval: 3s
+      timeout: 1s
+      retries: 10
+
+  wordpress:
+    init: true
+    container_name: wordpress
+    build: ./requirements/wordpress
+    image: wordpress:kaltevog
+    env_file:
+      - .env
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    volumes:
+      - wp-volume:/var/www/html
+    networks:
+      - wp-network
+    restart: on-failure
+  
+  redis:
+    init: true
+    container_name: redis
+    build: ./requirements/bonus/redis
+    image: redis:kaltevog
+    env_file:
+      - .env
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    networks:
+      - wp-network
+    restart: on-failure
+
+  ftp:
+    init: true
+    container_name: ftp
+    build: ./requirements/bonus/ftp
+    image: ftp:kaltevog
+    ports:
+      - "20:20"
+      - "21:21"
+      - "21100-21110:21100-21110"
+    env_file:
+      - .env
+    depends_on:
+      - wordpress
+    volumes:
+      - wp-volume:/home/vsftpd
+    networks:
+      - wp-network
+    restart: on-failure
+
+  website:
+    init: true
+    container_name: website
+    build: ./requirements/bonus/website
+    image: website:kaltevog
+    ports:
+      - 8081:80
+    env_file:
+      - .env
+    networks:
+      - wp-network
+    restart: on-failure
+  
+  adminer:
+    init: true
+    container_name: adminer
+    build: ./requirements/bonus/adminer
+    image: adminer:kaltevog
+    ports:
+      - 8080:8080
+    env_file:
+      - .env
+    networks:
+      - wp-network
+    restart: on-failure
+
+networks:
+  wp-network:
+    name: wp-network
+    driver: bridge
+
+volumes:
+  db-volume:
+    name: db-volume
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/kaltevog/data/mariadb
+  wp-volume:
+    name : wp-volume
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/kaltevog/data/wordpress
