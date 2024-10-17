@@ -1,0 +1,61 @@
+services:
+  nginx:
+    init: true
+    build: ./requirements/nginx
+    container_name: nginx
+    image: nginx:kaltevog
+    ports:
+      - "80:80"
+      - "443:443"
+    env_file:
+      - .env
+    volumes:
+      - wp-volume:/var/www/html
+    restart: on-failure
+    depends_on:
+      - wordpress
+
+  mariadb:
+    container_name: mariadb
+    build: ./requirements/mariadb
+    image: mariadb:kaltevog
+    env_file:
+      - .env
+    volumes:
+      - db-volume:/var/lib/mysql
+    restart: on-failure
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost"]
+      interval: 3s
+      timeout: 1s
+      retries: 10
+
+  wordpress:
+    init: true
+    container_name: wordpress
+    build: ./requirements/wordpress
+    image: wordpress:kaltevog
+    env_file:
+      - .env
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    volumes:
+      - wp-volume:/var/www/html
+    restart: on-failure
+
+volumes:
+  db-volume:
+    name: db-volume
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/kaltevog/data/mariadb
+  wp-volume:
+    name: wp-volume
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/kaltevog/data/wordpress
