@@ -7,18 +7,18 @@ all: up
 up:
 	@mkdir -p $(VOLUME_DIR_DB)
 	@mkdir -p $(VOLUME_DIR_WP)
-	docker compose -f $(COMPOSE_FILE) up --build -d
+	docker-compose -f $(COMPOSE_FILE) up --build -d
 
 re: fclean all
 
 logs:
-	docker compose -f $(COMPOSE_FILE) logs
+	docker-compose -f $(COMPOSE_FILE) logs
 
 clean:
-	docker compose -f $(COMPOSE_FILE) down
+	docker-compose -f $(COMPOSE_FILE) down
 
 fclean:
-	docker compose -f $(COMPOSE_FILE) down -v --rmi all
+	docker-compose -f $(COMPOSE_FILE) down -v --rmi all
 	@sudo rm -rf $(VOLUME_DIR_DB)
 	@sudo rm -rf $(VOLUME_DIR_WP)
 
