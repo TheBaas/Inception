@@ -5,7 +5,6 @@ services:
     container_name: nginx
     image: nginx:kaltevog
     ports:
-      - "80:80"
       - "443:443"
     env_file:
       - .env
